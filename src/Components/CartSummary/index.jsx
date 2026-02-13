@@ -1,80 +1,99 @@
-import { useContext } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ChevronLeftIcon } from '@heroicons/react/24/solid'
-import { ShoppingCartContext } from '../../Context'
-import OrderCard from '../OrderCard'
-import { totalPrice } from '../../utils'
-import Layout from '../Layout'
+import { useContext } from "react";
+import { ShoppingCartContext } from "../../Context";
+import Layout from "../Layout";
 
 const CartSummary = () => {
-  const context = useContext(ShoppingCartContext)
-  const navigate = useNavigate()
+  const context = useContext(ShoppingCartContext);
 
-  const handleCheckout = () => {
-    const orderToAdd = {
-      date: new Date().toLocaleDateString(),
-      products: context.cartProducts,
-      totalProducts: context.cartProducts.length,
-      totalPrice: totalPrice(context.cartProducts)
-    }
-    
-    context.setOrder([...context.order, orderToAdd])
-    context.setCartProducts([])
-    context.setSearchByTitle(null)
-    navigate('/my-orders/last')
+  const totalPrice = context.cartProducts.reduce(
+    (sum, product) => sum + product.price * product.quantity,
+    0
+  );
+
+const handleCheckout = () => {
+  if (context.cartProducts.length === 0) {
+    alert("Your cart is empty!");
+    return;
   }
+
+  const totalPrice = context.cartProducts.reduce(
+    (sum, product) => sum + product.price * product.quantity,
+    0
+  )
+
+  const orderToAdd = {
+    date: new Date().toLocaleDateString(),
+    products: context.cartProducts,
+    totalProducts: context.cartProducts.length,
+    totalPrice: totalPrice
+  }
+
+  context.setOrder([...context.order, orderToAdd])
+
+  // ✅ Use the helper instead of the raw setter
+  context.clearCart()
+
+  alert("Checkout successful! Order placed.")
+}
+
 
   return (
     <Layout>
-      <div className='flex items-center justify-center relative w-80 mb-6'>
-        <button 
-          className='absolute left-0'
-          onClick={() => navigate(-1)}>
-          <ChevronLeftIcon className='h-6 w-6 text-black cursor-pointer'/>
-        </button>
-        <h1 className='font-medium text-xl'>Cart Summary</h1>
+      <div className="flex items-center justify-center relative w-80 mb-6">
+        <h1 className="font-medium text-xl">Cart Summary</h1>
       </div>
-      
-      <div className='flex flex-col w-80'>
-        {context.cartProducts.map(product => (
-          <OrderCard
-            key={product.id}
-            id={product.id}
-            title={product.title}
-            imageUrl={product.images}
-            price={product.price}
-          />
-        ))}
-        
-        <div className='px-6 mb-6'>
-          <p className='flex justify-between items-center mb-2'>
-            <span className='font-light'>Total:</span>
-            <span className='font-medium text-2xl'>${totalPrice(context.cartProducts)}</span>
-          </p>
-          {context.isUserAuthenticated ? (
-            <button
-              className='bg-black py-3 text-white w-full rounded-lg'
-              onClick={handleCheckout}>
-              Checkout
-            </button>
-          ) : (
-            <div className='space-y-2'>
+
+      <div className="flex flex-col w-80 space-y-4">
+        {context.cartProducts.length === 0 ? (
+          <p className="text-center text-gray-500">Your cart is empty</p>
+        ) : (
+          context.cartProducts.map((product) => (
+            <div
+              key={product.id}
+              className="flex justify-between items-center border p-2 rounded-lg"
+            >
+              <div className="flex items-center gap-2">
+                <img
+                  className="w-12 h-12 object-contain rounded"
+                  src={product.images[0]}
+                  alt={product.title}
+                />
+                <div>
+                  <p className="font-medium">{product.title}</p>
+                  <p className="text-sm text-gray-500">
+                    ${product.price} x {product.quantity}
+                  </p>
+                </div>
+              </div>
+
               <button
-                className='bg-black py-3 text-white w-full rounded-lg'
-                onClick={() => navigate('/sign-in')}>
-                Sign In
-              </button>
-              <button
-                className='bg-white py-3 text-black border border-black w-full rounded-lg'
-                onClick={() => navigate('/sign-up')}>
-                Sign Up
+                className="bg-red-500 text-white px-3 py-1 rounded"
+                onClick={() => context.removeFromCart(product.id)}
+              >
+                Remove
               </button>
             </div>
-          )}
-        </div>
+          ))
+        )}
+
+        {context.cartProducts.length > 0 && (
+          <div className="px-2 mt-4">
+            <p className="flex justify-between items-center mb-3">
+              <span className="font-light">Total:</span>
+              <span className="font-medium text-2xl">${totalPrice}</span>
+            </p>
+
+            <button
+              className="bg-black py-3 text-white w-full rounded-lg"
+              onClick={handleCheckout}
+            >
+              Checkout
+            </button>
+          </div>
+        )}
       </div>
     </Layout>
-  )
-}
+  );
+};
 
-export default CartSummary
+export default CartSummary;
